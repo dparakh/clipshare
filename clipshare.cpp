@@ -1,10 +1,15 @@
 #include <iostream>
 #include <fstream>
-#include <windows>
+#include <windows.h>
+#include <string>
 
+using namespace std;
 
+#define argc __argc
+#define argv __argv
 
-int main (int argc, char * const argv[])
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nCmdShow)
+//int main (int argc, char * const argv[])
 {
     
     if (argc < 2)
@@ -16,22 +21,39 @@ int main (int argc, char * const argv[])
     
     std::cout << "Will Dump Data to: " << argv[1] << "\n";
 
-    DPAutoReleasePool thePool;
-    NSPasteboard *thePasteboard = [NSPasteboard generalPasteboard];
-    NSString *oldClipData = nil;
-    std::string oldFileData;
+    string oldClipData;
+    string oldFileData;
 
     while (true)
     {
-        NSString *dataOnBoard = [thePasteboard stringForType:NSStringPboardType];
-        if ((nil != dataOnBoard) && (![dataOnBoard isEqual:oldClipData]))
+        //NSString *dataOnBoard = [thePasteboard stringForType:NSStringPboardType];
+        string dataOnBoard;
+        if (OpenClipboard (0))
+        {
+            if (IsClipboardFormatAvailable(CF_TEXT))
+            {
+                HANDLE hClipText = GetClipboardData (CF_TEXT);
+                if (hClipText)
+                {
+                    char* pClipText = (char *)GlobalLock(hClipText);
+                    if (pClipText)
+                    {
+                        dataOnBoard = pClipText;
+                        GlobalUnlock (hClipText);
+                    }
+                    
+                }
+            }
+            CloseClipboard ();
+        }
+        
+        if (dataOnBoard != oldClipData)
         {
             std::ofstream clipfile (argv[1]);
-            clipfile << [dataOnBoard UTF8String];
+            clipfile << dataOnBoard;
             clipfile.close();
-            [oldClipData release];
-            oldClipData = [dataOnBoard retain];
-            oldFileData = [oldClipData UTF8String];
+            oldClipData = dataOnBoard;
+            oldFileData = oldClipData;
             std::cout << "Copied data to file from pasteboard\n";
         }
         
@@ -42,19 +64,33 @@ int main (int argc, char * const argv[])
                 std::istreambuf_iterator<char>());
             if (filedata != oldFileData)
             {
-                [thePasteboard clearContents];
-                NSArray *objectsToCopy = [NSArray arrayWithObject:[NSString stringWithUTF8String:filedata.c_str()]];
-                [thePasteboard writeObjects:objectsToCopy];
-                oldFileData = filedata;
-                std::cout << "Copied data to pasteboard from file\n";
+                if (OpenClipboard(0))
+                {
+                    EmptyClipboard();
+//                NSArray *objectsToCopy = [NSArray arrayWithObject:[NSString stringWithUTF8String:filedata.c_str()]];
+//                [thePasteboard writeObjects:objectsToCopy];
+                    HANDLE hFileData = GlobalAlloc (GMEM_SHARE, filedata.size()+1);
+                    if (hFileData)
+                    {
+                        char *pFileData = (char *)GlobalLock (hFileData);
+                        if (pFileData)
+                        {
+                            memcpy (pFileData, filedata.c_str(), filedata.size()+1);
+                            GlobalUnlock (hFileData);
+                        }
+                        SetClipboardData (CF_TEXT, hFileData);
+                        oldFileData = filedata;
+                        std::cout << "Copied data to pasteboard from file\n";
+                    }
+                    CloseClipboard();
+                }
             }
         }
         
         //sleep one second.
-        sleep(1);
+        //sleep(1);
+        Sleep(1000);
     }
-
-    [oldClipData release];
 
     return 0;
 }
