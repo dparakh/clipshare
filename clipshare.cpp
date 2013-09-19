@@ -1,3 +1,14 @@
+//----------------------------------------------------------------------------------
+//
+// Copyright (c) 2013 Devendra Parakh. All rights reserved.
+//
+//! \file	clipshare.mm
+//!
+//! The Clipboard Sharing application.
+//!
+//---------------------------------------------------------------------------------*/
+
+
 #include <iostream>
 #include <fstream>
 #include <windows.h>
