@@ -10,6 +10,18 @@ set(CMAKE_CXX_FLAGS "-Wall -g -pg")
 else(APPLE)
 set(PROJECT_SOURCES clipshare.cpp)
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+#We do this to use statically linked MSVCRT libs.
+set(CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        )
+foreach(CompilerFlag ${CompilerFlags})
+  string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+endforeach()
 endif (APPLE)
 
 #Set the project name here
